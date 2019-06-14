@@ -1,4 +1,4 @@
-import React, {Component} from "react";
+import React, {PureComponent} from "react";
 import {View} from 'react-native';
 import PropTypes from 'prop-types'
 import xmldom from 'xmldom';
@@ -57,11 +57,11 @@ const ELLIPSE_ATTS = ['cx', 'cy', 'rx', 'ry'];
 const TEXT_ATTS = ['fontFamily', 'fontSize', 'fontWeight', 'textAnchor']
 
 const POLYGON_ATTS = ['points', 'touchable'];
-const POLYLINE_ATTS = ['points'];
+const POLYLINE_ATTS = ['points', 'touchable'];
 
 const COMMON_ATTS = ['fill', 'fillOpacity', 'stroke', 'strokeWidth', 'strokeOpacity', 'opacity',
-    'strokeLinecap', 'strokeLinejoin',
-    'strokeDasharray', 'strokeDashoffset', 'x', 'y', 'rotate', 'scale', 'origin', 'originX', 'originY', 'transform', 'clipPath'];
+  'strokeLinecap', 'strokeLinejoin',
+  'strokeDasharray', 'strokeDashoffset', 'x', 'y', 'rotate', 'scale', 'origin', 'originX', 'originY', 'transform', 'clipPath'];
 
 let ind = 0;
 
@@ -78,7 +78,7 @@ function fixYPosition (y, node) {
   return fixYPosition(y, node.parentNode)
 }
 
-class SvgUri extends Component {
+class SvgUri extends PureComponent {
 
   constructor(props){
     super(props);
@@ -225,6 +225,24 @@ class SvgUri extends Component {
         return <Polygon key={i} {...componentAtts}>{children}</Polygon>;
       case 'polyline':
         componentAtts = this.obtainComponentAtts(node, POLYLINE_ATTS);
+        if (componentAtts.touchable) {
+          let polylineRef = null;
+          const handlePressIn = () => { polylineRef && polylineRef.setNativeProps({ opacity: 0.6 }); };
+          const handlePressOut = () => { polylineRef && polylineRef.setNativeProps({ opacity: 1 }); };
+          const handlePress = () => { this.props.onPolygonPress && this.props.onPolygonPress(componentAtts.touchable); };
+          return (
+            <Polyline
+              key={i}
+              ref={ref => { polylineRef = ref; }}
+              {...componentAtts}
+              onPressIn={handlePressIn}
+              onPressOut={handlePressOut}
+              onPress={handlePress}
+            >
+              {children}
+            </Polyline>
+          );
+        }
         return <Polyline key={i} {...componentAtts}>{children}</Polyline>;
       case 'text':
         componentAtts = this.obtainComponentAtts(node, TEXT_ATTS);
